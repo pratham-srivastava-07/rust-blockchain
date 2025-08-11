@@ -1,70 +1,68 @@
-use std::vec;
+
 
 use chrono::{DateTime, Utc};
-use sha2::{Sha256, Digest};
+use sha2::{Digest, Sha256};
 
-// struct for transactions
 #[derive(Debug)]
 struct Transaction {
     sender: String,
     receiver: String,
     amount: f32
 }
-// struct for one block
+
 #[derive(Debug)]
 struct Block {
-    timestamp: DateTime<Utc>,
     previous_hash: Vec<u8>,
     hash: Vec<u8>,
     transactions: Vec<Transaction>,
-    nonce: u64
+    nonce: u64,
+    timestamp: DateTime<Utc>
 }
 
 impl Block {
     fn calculate_hash(&mut self) -> Vec<u8> {
         let mut new_hash = Sha256::new();
 
-        let timestamp = self.timestamp.to_string().into_bytes();
-        let previous_hash = format!("{:?}", self.previous_hash).into_bytes();
-        let transaction_bytes = format!("{:?}", self.transactions).into_bytes();
+        let timestamp_of_block = self.timestamp.to_string().into_bytes();
+        let prev_hash = format!("{:?}", self.previous_hash).into_bytes();
+        let transactions = format!("{:?}", self.transactions).into_bytes();
 
-        new_hash.update(timestamp);
-        new_hash.update(transaction_bytes);
-        new_hash.update(previous_hash);
+        new_hash.update(timestamp_of_block);
+        new_hash.update(prev_hash);
+        new_hash.update(transactions);
         new_hash.update(self.nonce.to_string());
 
         new_hash.finalize().to_vec()
     }
 
-    fn mine_block(&mut self, difficulty: u32) {
+    fn mine_block(&mut self, difficulty: u8) {
         let prefix = vec![0u8; difficulty as usize];
 
         loop {
             self.hash = self.calculate_hash();
+
             if self.hash.starts_with(&prefix) {
-                println!("Block mined {:?}", self);
+                print!("block mined");
                 break;
             }
             self.nonce += 1;
         }
     }
 }
-// struct for blockchain
+
 #[derive(Debug)]
 struct Blockchain {
     chain: Vec<Block>,
-    difficulty: u32
+    difficulty: u8
 }
 
 impl Blockchain {
-    // genesis block 
-    fn new(diff: u32) -> Self {
-
+    fn new(diff: u8) -> Self {
         let genesis_block = Block {
-            timestamp: Utc::now(),
-            previous_hash: vec![0,32],
-            hash: vec![],
             transactions: vec![],
+            hash: vec![],
+            previous_hash: vec![],
+            timestamp: Utc::now(),
             nonce: 0
         };
 
@@ -87,33 +85,28 @@ impl Blockchain {
 
         self.chain.push(block);
     }
-
-
-
-
 }
 
 fn main() {
-    println!("Hello, world!");
+    println!("Hello world");
 
-    let mut blockchain = Blockchain::new(0);
+    let mut blockchain = Blockchain::new(1);
 
     let transaction = Transaction {
         sender: "Pratham".to_string(),
-        amount: 10.00,
+        amount: 10.0,
         receiver: "Krish".to_string()
     };
 
     let block = Block {
         timestamp: Utc::now(),
+        transactions: vec![transaction],
         previous_hash: vec![],
         hash: vec![],
-        transactions: vec![transaction],
         nonce: 0
     };
 
     blockchain.add_new_block(block);
 
-    println!("{:?}", blockchain)
+    println!("Blockchain: {:?}", blockchain)
 }
-
